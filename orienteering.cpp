@@ -9,15 +9,32 @@ using namespace std;
 class Orienteering{
 private:
 	vector<vector<char> > metrix;
-	map<char, vector<char> > pathGraph;
-	map<char, vector<char> >::iterator iter;
+	map<string, vector<string> > pathGraph;
+	map<string, vector<string> >::iterator iter;
+	map<string, bool> isPassed;
+	string startPoint;
+	string endPoint;
 	int chechPointCount;
 	int passedCP;
+	int steps;
 
 
 public:
 	Orienteering(){
 		chechPointCount = 0;
+		steps = 0;
+	}
+
+private:
+	string getName(char simbol, int col, int row){
+		string name(1, simbol);
+		name.append(col - '0');
+		name.append(row - '0');
+		return name;
+	}
+
+	string findNearest(string curPos){
+		
 	}
 
 public:
@@ -30,30 +47,70 @@ public:
 			if(curGrid == '#'){
 				continue;
 			}
+			string name = getName(curGrid, curRow, i);
+			isPassed[name] = false;
 			if(curGrid == '@'){
 				++chechPointCount;
 			}
-			if(i - 1 > 0 && row[i - 1] != '#'){
-				iter = pathGraph.find(row[i - 1]);
+			else if(curGrid == 'S'){
+				startPoint = name;
+			}
+			else if(curGrid == 'G'){
+				endPoint = name;
+			}
+			vector<string> nodes;
+			string name1;
+			if(i - 1 >= 0 && row[i - 1] != '#'){
+				name1 = getName(row[i - 1], curRow, i - 1);
+				iter = pathGraph.find(name1);
 				if(iter == pathGraph.end()){
-					vector<char> nodes;
-					nodes.push_back(row[i - 1]);
-					pathGraph[row[i]] = nodes;
+					nodes.clear();
+					nodes.push_back(name);
+					pathGraph[name1] = nodes;
 				}
 				else{
-					iter->second.push_back(row[i - 1]);
+					iter->second.push_back(name);
 				}
-				iter = pathGraph.find(row[i]);
+				iter = pathGraph.find(name);
 				if(iter == pathGraph.end()){
-					vector<char> nodes;
-					nodes.push_back(row[i - 1]);
-					pathGraph[row[i]] = nodes;
+					nodes.clear();
+					nodes.push_back(name1);
+					pathGraph[name] = nodes;
 				}
 				else{
-					iter->second.push_back(row[i - 1]);
+					iter->second.push_back(name1);
+				}
+			}
+			if(curRow - 1 >= 0 && metrix[curRow - 1][i] != '#'){
+				name1 = getName(metrix[curRow - 1], curRow - 1, i);
+				iter = pathGraph.find(name1);
+				if(iter == pathGraph.end()){
+					nodes.clear();
+					nodes.push_back(name);
+					pathGraph[name1] = nodes;
+				}
+				else{
+					iter->second.push_back(name);
+				}
+				iter = pathGraph.find(name);
+				if(iter == pathGraph.end()){
+					nodes.clear();
+					nodes.push_back(name1);
+					pathGraph[name] = nodes;
+				}
+				else{
+					iter->second.push_back(name1);
 				}
 			}
 		}
+		metrix.append(row);
+	}
+
+	int findPath(){
+		string curPos = startPoint;
+		while(curPos[0] != 'G'){
+			curPos = findNearest(curPos);
+		}		
 	}
 };
 
@@ -67,5 +124,6 @@ int main(int argc, char* argv[]){
 		cin >> line;
 		o.addEdge(line, i, height);
 	}
+	cout << o.findPath() << endl;
 	return 0;
 }
