@@ -1,8 +1,9 @@
 #include<iostream>
-#include<fsteam>
+#include<fstream>
 #include<string>
 #include<vector>
 #include<map>
+#include<queue>
 
 using namespace std;
 
@@ -28,13 +29,48 @@ public:
 private:
 	string getName(char simbol, int col, int row){
 		string name(1, simbol);
-		name.append(col - '0');
-		name.append(row - '0');
+		string colname(1, col - '0');
+		string rowname(1, row - '0');
+		name.append(colname);
+		name.append(rowname);
 		return name;
 	}
 
 	string findNearest(string curPos){
-		
+		int subStep = 0;
+		queue<string> q;
+		string neighbors;
+		pushVector(q, pathGraph[curPos]);
+		q.push("flag");
+		while(!q.empty()){
+			neighbors = q.front();
+			q.pop();
+			if(neighbors == "flag"){
+				++subStep;
+				if(q.empty()){
+					return "failed";
+				}
+				q.push("flag");
+			}
+			if(neighbors[0] == '@'){
+				steps += subStep;
+				--chechPointCount;
+				return neighbors;
+			}
+			if(chechPointCount == 0 && neighbors[0] == 'G'){
+				return "success";
+			}
+			pushVector(q, pathGraph[neighbors]);
+		}
+	}
+
+	void pushVector(queue<string> &q, vector<string> neighbors){
+		for(int i = 0; i < neighbors.size(); ++i){
+			if(isPassed[neighbors[i]]){
+				q.push(neighbors[i]);
+				isPassed[neighbors[i]] = false;
+			}
+		}
 	}
 
 public:
@@ -48,7 +84,7 @@ public:
 				continue;
 			}
 			string name = getName(curGrid, curRow, i);
-			isPassed[name] = false;
+			isPassed[name] = true;
 			if(curGrid == '@'){
 				++chechPointCount;
 			}
@@ -82,7 +118,7 @@ public:
 				}
 			}
 			if(curRow - 1 >= 0 && metrix[curRow - 1][i] != '#'){
-				name1 = getName(metrix[curRow - 1], curRow - 1, i);
+				name1 = getName(metrix[curRow - 1][i], curRow - 1, i);
 				iter = pathGraph.find(name1);
 				if(iter == pathGraph.end()){
 					nodes.clear();
@@ -103,19 +139,23 @@ public:
 				}
 			}
 		}
-		metrix.append(row);
+		metrix.push_back(row);
 	}
 
 	int findPath(){
 		string curPos = startPoint;
-		while(curPos[0] != 'G'){
+		while(curPos != "success" && curPos != "failed"){
 			curPos = findNearest(curPos);
-		}		
+		}
+		if(curPos == "success"){
+			return steps;
+		}
+		return -1;
 	}
 };
 
 int main(int argc, char* argv[]){
-	int width, heght;
+	int width, height;
 	string line;
 	Orienteering o;
 
