@@ -7,6 +7,7 @@
 using namespace std;
 
 class Orienteering{
+
 private:
 	vector<vector<char> > metrix;
 	map<string, vector<string> > pathGraph;
@@ -14,18 +15,53 @@ private:
 	map<string, bool> isPassed;
 	string startPoint;
 	string endPoint;
-	int chechPointCount;
+	int checkPointCount;
 	int passedCP;
 	int steps;
-
+	int height;
+	int width;
 
 public:
 	Orienteering(){
-		chechPointCount = 0;
-		steps = 0;
+		height = -1;
+		width  = -1;
+		checkPointCount = 0;
+	}
+
+	void main(){
+		
+		readData();
+
+		if(checkParams()){
+			cout << -1 << endl;
+		}
+
+		cout << findPath() << endl;
+
 	}
 
 private:
+
+	void readData(){
+		
+		cin >> width >> height;
+		
+		for(int i = 0; i < width; ++i){
+			cin >> line;
+			o.addEdge(line, i, height);
+		}
+
+	}
+
+	bool checkParams(){
+		if( width < 1 || width > 100 ||
+			height < 1 || width > 100 ||
+			checkPointCount > 18){
+			return true;
+		}
+		return false;
+	}
+
 	string getName(char simbol, int col, int row){
 		string name(1, simbol);
 		name.append(col - '0');
@@ -50,7 +86,7 @@ public:
 			string name = getName(curGrid, curRow, i);
 			isPassed[name] = false;
 			if(curGrid == '@'){
-				++chechPointCount;
+				++checkPointCount;
 			}
 			else if(curGrid == 'S'){
 				startPoint = name;
@@ -115,15 +151,10 @@ public:
 };
 
 int main(int argc, char* argv[]){
-	int width, heght;
-	string line;
+
 	Orienteering o;
 
-	cin >> width >> height;
-	for(int i = 0; i < width; ++i){
-		cin >> line;
-		o.addEdge(line, i, height);
-	}
-	cout << o.findPath() << endl;
+	o.main();
+
 	return 0;
 }
