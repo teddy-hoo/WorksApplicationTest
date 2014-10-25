@@ -2,19 +2,41 @@
 #include<fstream>
 #include<string>
 #include<vector>
-#include<map>
-#include<queue>
+#include<stack>
 
 using namespace std;
+
+char START      = 'S';
+char GOAL       = 'G';
+char CHECKPOINT = '@';
+char OPENBLOCK  = '.';
+char CLOESBLOCK = '#';
+
+typedef struct Nodes
+{
+	int cost;
+	int index;
+	char flag;
+	int pos[2];
+	Nodes * next;
+
+	Nodes(char f, int i, int c, Nodes* n, int p[2]){
+		index = i;
+		flag = f;
+		cost = c;
+		next = n;
+		pos[0] = p[0];
+		pos[1] = p[1];
+	}
+} Node;
 
 class Orienteering{
 
 private:
+
+	vector<Node *> graph;
 	vector<vector<char> > metrix;
-	map<string, vector<string> > pathGraph;
-	map<string, vector<string> >::iterator iter;
-	map<string, bool> isPassed;
-	string startPoint;
+	int startPoint[2];
 	string endPoint;
 	int checkPointCount;
 	int passedCP;
@@ -37,19 +59,72 @@ public:
 			cout << -1 << endl;
 		}
 
+		buildGraph();
 		cout << findPath() << endl;
 
 	}
 
 private:
 
+	int findPath(){
+		int max = -1;
+
+		stack<Node *> sn;
+		vector<int> si;
+		sn.push(graph[0]);
+		si.push_back(0);
+
+		int path = 0;
+		while(!sn.empty()){
+			if(si.size() == graph.size()){
+				int top = si.back();
+				if(graph[top]->flag == GOAL){
+					max = path > max ? path : max;
+				}
+				break;
+				si.pop_back();
+				sn.pop();
+			}
+			Node * cur = sn.top();
+			Node * next = cur->next;
+
+			while(next != NULL){
+				bool has = false;
+				for(int i = 0; i < si.size(); i++){
+					if(si[i] == next->index){
+						has = true;
+					}
+				}
+				if(has == false){
+					break;
+				}
+				next = next->next;
+			}
+			if(next == NULL){
+				sn.pop();
+				si.pop_back();
+			}
+
+			else{
+				path += next->cost;
+				sn.pop();
+				sn.push(next);
+				si.push_back(next->index);
+				sn.push(graph[next->index]);
+			}
+		}
+		return max;
+	}
+
 	void readData(){
+
+		string line;
 		
 		cin >> width >> height;
 		
-		for(int i = 0; i < width; ++i){
+		for(int i = 0; i < height; ++i){
 			cin >> line;
-			o.addEdge(line, i, height);
+			buildMatrix(line, i);
 		}
 
 	}
@@ -63,130 +138,191 @@ private:
 		return false;
 	}
 
-	string getName(char simbol, int col, int row){
-		string name(1, simbol);
-		string colname(1, col - '0');
-		string rowname(1, row - '0');
-		name.append(colname);
-		name.append(rowname);
-		return name;
-	}
-
-	string findNearest(string curPos){
-		int subStep = 0;
-		queue<string> q;
-		string neighbors;
-		pushVector(q, pathGraph[curPos]);
-		q.push("flag");
-		while(!q.empty()){
-			neighbors = q.front();
-			q.pop();
-			if(neighbors == "flag"){
-				++subStep;
-				if(q.empty()){
-					return "failed";
-				}
-				q.push("flag");
-			}
-			if(neighbors[0] == '@'){
-				steps += subStep;
-				--chechPointCount;
-				return neighbors;
-			}
-			if(chechPointCount == 0 && neighbors[0] == 'G'){
-				return "success";
-			}
-			pushVector(q, pathGraph[neighbors]);
-		}
-	}
-
-	void pushVector(queue<string> &q, vector<string> neighbors){
-		for(int i = 0; i < neighbors.size(); ++i){
-			if(isPassed[neighbors[i]]){
-				q.push(neighbors[i]);
-				isPassed[neighbors[i]] = false;
-			}
-		}
-	}
-
-public:
-	void addEdge(string line, int curRow, int length){
+	void buildMatrix(string line, int curRow){
 		vector<char> row;
 		char curGrid;
-		for(int i = 0; i < length; ++i){
+		for(int i = 0; i < width; ++i){
 			curGrid = line[i];
 			row.push_back(curGrid);
-			if(curGrid == '#'){
-				continue;
-			}
-			string name = getName(curGrid, curRow, i);
-			isPassed[name] = true;
-			if(curGrid == '@'){
+
+			if(curGrid == CHECKPOINT){
 				++checkPointCount;
 			}
-			else if(curGrid == 'S'){
-				startPoint = name;
-			}
-			else if(curGrid == 'G'){
-				endPoint = name;
-			}
-			vector<string> nodes;
-			string name1;
-			if(i - 1 >= 0 && row[i - 1] != '#'){
-				name1 = getName(row[i - 1], curRow, i - 1);
-				iter = pathGraph.find(name1);
-				if(iter == pathGraph.end()){
-					nodes.clear();
-					nodes.push_back(name);
-					pathGraph[name1] = nodes;
-				}
-				else{
-					iter->second.push_back(name);
-				}
-				iter = pathGraph.find(name);
-				if(iter == pathGraph.end()){
-					nodes.clear();
-					nodes.push_back(name1);
-					pathGraph[name] = nodes;
-				}
-				else{
-					iter->second.push_back(name1);
-				}
-			}
-			if(curRow - 1 >= 0 && metrix[curRow - 1][i] != '#'){
-				name1 = getName(metrix[curRow - 1][i], curRow - 1, i);
-				iter = pathGraph.find(name1);
-				if(iter == pathGraph.end()){
-					nodes.clear();
-					nodes.push_back(name);
-					pathGraph[name1] = nodes;
-				}
-				else{
-					iter->second.push_back(name);
-				}
-				iter = pathGraph.find(name);
-				if(iter == pathGraph.end()){
-					nodes.clear();
-					nodes.push_back(name1);
-					pathGraph[name] = nodes;
-				}
-				else{
-					iter->second.push_back(name1);
-				}
+			else if(curGrid == START){
+				startPoint[0] = metrix.size();
+				startPoint[1] = i;
 			}
 		}
 		metrix.push_back(row);
 	}
 
-	int findPath(){
-		string curPos = startPoint;
-		while(curPos != "success" && curPos != "failed"){
-			curPos = findNearest(curPos);
+	void buildGraph(){
+
+		int count = 0;
+
+		Node *s = new Node(START, 0, -1, NULL, startPoint);
+		graph.push_back(s);
+
+		while( count < checkPointCount + 2 ){
+			int row = graph[count]->pos[0];
+			int col = graph[count]->pos[1];
+
+			vector<Node *> neighbors = findNeighbor(row, col);
+
+			Node* curNode = graph[count];
+			for( int i = 0; i < neighbors.size(); i++){
+				Node * n = neighbors[i];
+				int index = notExists(graph, n->pos[0], n->pos[1]);
+				if(index < 0){
+					graph.push_back(n);
+					n->index = graph.size() - 1;
+				}
+				else{
+					n->index = index;
+				}
+				Node * another = graph[n->index];
+				while(another->next != NULL){
+					another = another->next;
+				}
+				another->next = graph[count];
+				curNode->next = n;
+				curNode = n;
+			}
+			curNode->next = NULL;
+
+			metrix[row][col] = '#';
+			count++;
 		}
-		if(curPos == "success"){
-			return steps;
+	}
+
+	int notExists(vector<Node *> &nodes, int r, int c){
+		for(int i = 0; i < nodes.size(); i++){
+			if(nodes[i]->pos[0] == r && nodes[i]->pos[1] == c){
+				return i;
+			}
 		}
 		return -1;
+	}
+
+	void addNeighbor(vector<Node *> &neighbors, int r, int c, int cost){
+		if(notExists(neighbors, r, c) < 0){
+			int pos[2];
+			pos[0] = r;
+			pos[1] = c;
+			Node * e = new Node(metrix[r][c], -1, cost, NULL, pos);
+			neighbors.push_back(e);
+		}
+	}
+
+	vector<Node *> findNeighbor(int row, int col){
+		vector<Node *> neighbors;
+
+		int top = false, left = false, right = false, bottom = false;
+		// form four direction to find neighbors, top left right bottom
+		
+		int r = row - 1; //top
+		int c = col;
+		while(metrix[r][c] == OPENBLOCK && r >= 0){ 
+
+			int mc = c - 1;
+			while(metrix[r][mc] == OPENBLOCK && mc >= 0){ //top left
+				mc --;
+			}
+			if(mc >= 0 && metrix[r][mc] == CHECKPOINT || metrix[r][mc] == GOAL){
+				addNeighbor(neighbors, r, mc, r + mc - row - col);
+			}
+
+			mc = c + 1;
+			while(metrix[r][mc] == OPENBLOCK && mc < width){ //top right
+				mc ++;
+			}
+			if(mc < width && metrix[r][mc] == CHECKPOINT || metrix[r][mc] == GOAL){
+				addNeighbor(neighbors, r, mc, r + mc - row - col);
+			}
+
+			r --;
+		}
+		if(r >= 0 && metrix[r][c] == CHECKPOINT || metrix[r][c] == GOAL){
+			addNeighbor(neighbors, r, c, r + c - row - col);
+		}
+
+		r = row; //left
+		c = col - 1;
+		while(metrix[r][c] == OPENBLOCK && c >= 0){ 
+
+			int mr = r - 1;
+			while(metrix[mr][c] == OPENBLOCK && mr >= 0){ //left top
+				mr --;
+			}
+			if(mr >= 0 && metrix[mr][c] == CHECKPOINT || metrix[mr][c] == GOAL){
+				addNeighbor(neighbors, mr, c, mr + c - row - col);
+			}
+
+			mr = r + 1;
+			while(metrix[mr][c] == OPENBLOCK && mr < height){ //left bottom
+				mr ++;
+			}
+			if(mr < height && metrix[mr][c] == CHECKPOINT || metrix[mr][c] == GOAL){
+				addNeighbor(neighbors, mr, c, mr + c - row - col);
+			}
+			c--;
+		}
+		if(c >= 0 && metrix[r][c] == CHECKPOINT || metrix[r][c] == GOAL){
+			addNeighbor(neighbors, r, c, r + c - row - col);
+		}
+
+		r = row; //right
+		c = col + 1;
+		while(metrix[r][c] == OPENBLOCK && c < width){ 
+
+			int mr = r - 1;
+			while(metrix[mr][c] == OPENBLOCK && mr >= 0){ //right top
+				mr --;
+			}
+			if(mr >= 0 && metrix[mr][c] == CHECKPOINT || metrix[mr][c] == GOAL){
+				addNeighbor(neighbors, mr, c, mr + c - row - col);
+			}
+
+			mr = r + 1;
+			while(metrix[mr][c] == OPENBLOCK && mr < height){ //top right
+				mr ++;
+			}
+			if(mr < height && metrix[mr][c] == CHECKPOINT || metrix[mr][c] == GOAL){
+				addNeighbor(neighbors, mr, c, mr + c - row - col);
+			}
+			c++;
+
+		}
+		if(c < width && metrix[r][c] == CHECKPOINT || metrix[r][c] == GOAL){
+			addNeighbor(neighbors, r, c, r + c - row - col);
+		}
+
+		r = row + 1; //
+		c = col;
+		while(metrix[r][c] == OPENBLOCK && r < height){ 
+
+			int mc = c - 1;
+			while(metrix[r][mc] == OPENBLOCK && mc >= 0){ //bottom left
+				mc --;
+			}
+			if(mc >= 0 && metrix[r][mc] == CHECKPOINT || metrix[r][mc] == GOAL){
+				addNeighbor(neighbors, r, mc, r + mc - row - col);
+			}
+
+			mc = c + 1;
+			while(metrix[r][mc] == OPENBLOCK && mc < width){ //bottom right
+				mc ++;
+			}
+			if(mc < width && metrix[r][mc] == CHECKPOINT || metrix[r][mc] == GOAL){
+				addNeighbor(neighbors, r, mc, r + mc - row - col);
+			}
+			r ++;
+		}
+		if(r < height && metrix[r][c] == CHECKPOINT || metrix[r][c] == GOAL){
+			addNeighbor(neighbors, r, c, r + c - row - col);
+		}
+
+		return neighbors;
 	}
 };
 
