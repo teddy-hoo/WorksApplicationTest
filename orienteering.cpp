@@ -33,13 +33,9 @@ typedef struct Nodes
 class Orienteering{
 
 private:
-
-	vector<Node *> graph;
 	vector<vector<char> > metrix;
 	int startPoint[2];
-	string endPoint;
 	int checkPointCount;
-	int passedCP;
 	int steps;
 	int height;
 	int width;
@@ -117,7 +113,7 @@ private:
 				}
 			}
 			else if(d == 2){
-				if( x + 1 < width &&
+				if( y + 1 < width &&
 				    flag[x][y + 1] < 2 &&
 				    metrix[x][y + 1] != '#'){
 					if(metrix[x][y + 1] == 'G'){
